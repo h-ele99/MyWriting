@@ -5,16 +5,26 @@ import { supabase } from '../supabaseClient.js'
 export async function listBooks() {
   const { data, error } = await supabase
     .from('books')
-    .select('*, chapters(count)')
+    .select('*, chapters(count), book_tags(tags(id, name))')
     .order('updated_at', { ascending: false })
   if (error) throw error
-  return data.map((b) => ({ ...b, chapterCount: b.chapters?.[0]?.count ?? 0 }))
+  return data.map((b) => ({ ...normalizeBook(b), chapterCount: b.chapters?.[0]?.count ?? 0 }))
 }
 
 export async function getBook(bookId) {
-  const { data, error } = await supabase.from('books').select('*').eq('id', bookId).single()
+  const { data, error } = await supabase
+    .from('books')
+    .select('*, book_tags(tags(id, name))')
+    .eq('id', bookId)
+    .single()
   if (error) throw error
-  return data
+  return normalizeBook(data)
+}
+
+function normalizeBook(row) {
+  const tags = (row.book_tags || []).map((bt) => bt.tags).filter(Boolean)
+  const { book_tags, chapters, ...rest } = row
+  return { ...rest, tags }
 }
 
 export async function createBook({ title, description }) {
@@ -133,10 +143,14 @@ async function getOrCreateTag(name) {
   return data
 }
 
+async function resolveTags(tagNames) {
+  const uniqueNames = [...new Set(tagNames.map((t) => t.trim().toLowerCase().replace(/^#/, '')).filter(Boolean))]
+  return Promise.all(uniqueNames.map(getOrCreateTag))
+}
+
 export async function setChapterTags(chapterId, tagNames) {
   const { data: userData } = await supabase.auth.getUser()
-  const uniqueNames = [...new Set(tagNames.map((t) => t.trim().toLowerCase().replace(/^#/, '')).filter(Boolean))]
-  const tags = await Promise.all(uniqueNames.map(getOrCreateTag))
+  const tags = await resolveTags(tagNames)
 
   await supabase.from('chapter_tags').delete().eq('chapter_id', chapterId)
   if (tags.length) {
@@ -147,23 +161,53 @@ export async function setChapterTags(chapterId, tagNames) {
   return tags
 }
 
-export async function listChaptersByTag(tagName) {
-  const { data: tag, error: tagError } = await supabase
+export async function setBookTags(bookId, tagNames) {
+  const { data: userData } = await supabase.auth.getUser()
+  const tags = await resolveTags(tagNames)
+
+  await supabase.from('book_tags').delete().eq('book_id', bookId)
+  if (tags.length) {
+    const rows = tags.map((tag) => ({ book_id: bookId, tag_id: tag.id, user_id: userData.user.id }))
+    const { error } = await supabase.from('book_tags').insert(rows)
+    if (error) throw error
+  }
+  return tags
+}
+
+async function findTagIdByName(tagName) {
+  const { data: tag, error } = await supabase
     .from('tags')
     .select('id')
     .eq('name', tagName.toLowerCase())
     .maybeSingle()
-  if (tagError) throw tagError
-  if (!tag) return []
+  if (error) throw error
+  return tag?.id || null
+}
+
+export async function listChaptersByTag(tagName) {
+  const tagId = await findTagIdByName(tagName)
+  if (!tagId) return []
 
   const { data, error } = await supabase
     .from('chapter_tags')
     .select('chapters(*, book:books(id, title), chapter_tags(tags(id, name)))')
-    .eq('tag_id', tag.id)
+    .eq('tag_id', tagId)
   if (error) throw error
   return data
     .filter((row) => row.chapters)
     .map((row) => ({ ...normalizeChapter(row.chapters), book: row.chapters.book }))
+}
+
+export async function listBooksByTag(tagName) {
+  const tagId = await findTagIdByName(tagName)
+  if (!tagId) return []
+
+  const { data, error } = await supabase
+    .from('book_tags')
+    .select('books(*, book_tags(tags(id, name)))')
+    .eq('tag_id', tagId)
+  if (error) throw error
+  return data.filter((row) => row.books).map((row) => normalizeBook(row.books))
 }
 
 // ---------- version history ----------
@@ -194,18 +238,21 @@ export async function deleteVersion(versionId) {
 // ---------- full data export (used by backups) ----------
 
 export async function exportAllData() {
-  const [{ data: books }, { data: chapters }, { data: tags }, { data: chapterTags }] = await Promise.all([
-    supabase.from('books').select('*'),
-    supabase.from('chapters').select('*'),
-    supabase.from('tags').select('*'),
-    supabase.from('chapter_tags').select('*'),
-  ])
+  const [{ data: books }, { data: chapters }, { data: tags }, { data: chapterTags }, { data: bookTags }] =
+    await Promise.all([
+      supabase.from('books').select('*'),
+      supabase.from('chapters').select('*'),
+      supabase.from('tags').select('*'),
+      supabase.from('chapter_tags').select('*'),
+      supabase.from('book_tags').select('*'),
+    ])
   return {
     exportedAt: new Date().toISOString(),
-    version: 1,
+    version: 2,
     books: books || [],
     chapters: chapters || [],
     tags: tags || [],
     chapterTags: chapterTags || [],
+    bookTags: bookTags || [],
   }
 }

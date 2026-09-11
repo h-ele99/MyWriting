@@ -121,14 +121,18 @@ The easiest option is **Vercel** or **Netlify** (both have generous free tiers):
 - **Editor** — a clean page with just the title and text. It autosaves ~1.5 seconds after
   you stop typing (or press Cmd/Ctrl+S, or click "Save now"). Click **Focus mode** to hide
   everything except the page you're writing.
-- **Tags** — add hashtags to a chapter right under its title (type a word and press Enter).
-  Use the **Tags** page in the top nav to browse all your chapters by tag across every book,
-  or use the tag chips at the top of a book's chapter list to filter within just that book.
+- **Tags** — add hashtags to a chapter right under its title, or to a book itself (in the
+  New/Edit book form, or right under the title on a book's page) — type a word and press
+  Enter. Use the **Tags** page in the top nav to search all your tags and see every book and
+  chapter that carries one, across your whole library; use the tag chips at the top of the
+  Books page to filter your books by tag, or the ones at the top of a book's chapter list to
+  filter within just that book.
 - **Version history** — click "Version history" in the editor toolbar to see earlier
   snapshots of a chapter and restore any of them (your current text is saved as a version
   first, so restoring is never destructive).
-- **Export to Word** — "Export .docx" in the editor exports just that chapter; "Export book
-  (.docx)" on a book's page combines every chapter into one Word document.
+- **Export to Word** — "Export .docx" in the editor exports just that chapter; "Export .docx"
+  on a book's card (from the Books page) or "Export book (.docx)" on a book's own page
+  combines every chapter into one Word document.
 - **Backup to Google Drive** — in **Settings**, click "Connect Google Drive" once, then
   "Backup now" any time. After that, Bloom also backs up automatically about a minute after
   you make an edit, and once a day while you have the app open. Backups are JSON files in a

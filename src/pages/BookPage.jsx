@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Modal from '../components/Modal.jsx'
-import { createChapter, deleteChapter, getBook, listChapters } from '../lib/db.js'
+import TagEditor from '../components/TagEditor.jsx'
+import { createChapter, deleteChapter, getBook, listChapters, setBookTags } from '../lib/db.js'
 import { exportBookToDocx } from '../lib/docxExport.js'
 import { scheduleBackupAfterEdit } from '../lib/backup.js'
 import { useToast } from '../components/Toast.jsx'
@@ -11,6 +12,7 @@ export default function BookPage() {
   const navigate = useNavigate()
   const [book, setBook] = useState(null)
   const [chapters, setChapters] = useState(null)
+  const [bookTags, setBookTagsState] = useState([])
   const [showNew, setShowNew] = useState(false)
   const [activeTag, setActiveTag] = useState(null)
   const [exporting, setExporting] = useState(false)
@@ -20,6 +22,7 @@ export default function BookPage() {
     const [b, c] = await Promise.all([getBook(bookId), listChapters(bookId)])
     setBook(b)
     setChapters(c)
+    setBookTagsState(b.tags.map((t) => t.name))
   }
 
   useEffect(() => {
@@ -56,6 +59,16 @@ export default function BookPage() {
     refresh()
   }
 
+  async function handleBookTagsChange(newTags) {
+    setBookTagsState(newTags)
+    try {
+      await setBookTags(bookId, newTags)
+      scheduleBackupAfterEdit()
+    } catch (err) {
+      showToast('Could not save tags: ' + err.message)
+    }
+  }
+
   async function handleExportBook() {
     setExporting(true)
     try {
@@ -79,6 +92,9 @@ export default function BookPage() {
         <div>
           <div className="page-title">{book.title}</div>
           {book.description && <p style={{ color: 'var(--ink-soft)', marginTop: 4 }}>{book.description}</p>}
+          <div style={{ marginTop: 10 }}>
+            <TagEditor tags={bookTags} onChange={handleBookTagsChange} />
+          </div>
         </div>
         <div className="pill-row">
           <button className="btn btn-ghost" onClick={handleExportBook} disabled={exporting || chapters.length === 0}>

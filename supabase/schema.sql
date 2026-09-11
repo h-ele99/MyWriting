@@ -48,6 +48,16 @@ create table if not exists public.chapter_tags (
 
 create index if not exists chapter_tags_tag_id_idx on public.chapter_tags (tag_id);
 
+-- ---------- book_tags (many-to-many) ----------
+create table if not exists public.book_tags (
+  book_id uuid not null references public.books (id) on delete cascade,
+  tag_id uuid not null references public.tags (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade default auth.uid(),
+  primary key (book_id, tag_id)
+);
+
+create index if not exists book_tags_tag_id_idx on public.book_tags (tag_id);
+
 -- ---------- chapter_versions (version history) ----------
 create table if not exists public.chapter_versions (
   id uuid primary key default gen_random_uuid(),
@@ -91,6 +101,7 @@ alter table public.books enable row level security;
 alter table public.chapters enable row level security;
 alter table public.tags enable row level security;
 alter table public.chapter_tags enable row level security;
+alter table public.book_tags enable row level security;
 alter table public.chapter_versions enable row level security;
 alter table public.backup_log enable row level security;
 
@@ -108,6 +119,10 @@ create policy "own rows only" on public.tags
 
 drop policy if exists "own rows only" on public.chapter_tags;
 create policy "own rows only" on public.chapter_tags
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "own rows only" on public.book_tags;
+create policy "own rows only" on public.book_tags
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 drop policy if exists "own rows only" on public.chapter_versions;
