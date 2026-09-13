@@ -56,10 +56,8 @@ export async function listChapters(bookId) {
     .from('chapters')
     .select('*, chapter_tags(tags(id, name))')
     .eq('book_id', bookId)
-    .order('order_index', { ascending: true })
-    .order('created_at', { ascending: true })
   if (error) throw error
-  return data.map(normalizeChapter)
+  return data.map(normalizeChapter).sort((a, b) => a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' }))
 }
 
 export async function getChapter(chapterId) {
