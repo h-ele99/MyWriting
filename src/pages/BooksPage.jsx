@@ -9,6 +9,7 @@ import { useToast } from '../components/Toast.jsx'
 
 export default function BooksPage() {
   const [books, setBooks] = useState(null)
+  const [loadError, setLoadError] = useState(null)
   const [showNew, setShowNew] = useState(false)
   const [editingBook, setEditingBook] = useState(null)
   const [activeTag, setActiveTag] = useState(null)
@@ -16,7 +17,12 @@ export default function BooksPage() {
   const showToast = useToast()
 
   async function refresh() {
-    setBooks(await listBooks())
+    try {
+      setLoadError(null)
+      setBooks(await listBooks())
+    } catch (err) {
+      setLoadError(err.message || String(err))
+    }
   }
 
   useEffect(() => {
@@ -84,7 +90,17 @@ export default function BooksPage() {
         </button>
       </div>
 
-      {books === null && <div className="spinner" />}
+      {books === null && !loadError && <div className="spinner" />}
+
+      {loadError && (
+        <div className="empty-state">
+          <div className="big">Couldn't load your books</div>
+          <p style={{ fontFamily: 'monospace', fontSize: 12.5 }}>{loadError}</p>
+          <button className="btn btn-ghost" onClick={refresh} style={{ marginTop: 10 }}>
+            Try again
+          </button>
+        </div>
+      )}
 
       {allTags.length > 0 && (
         <div className="pill-row" style={{ marginBottom: 18 }}>
