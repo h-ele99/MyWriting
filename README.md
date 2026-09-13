@@ -130,6 +130,10 @@ The easiest option is **Vercel** or **Netlify** (both have generous free tiers):
 - **Version history** — click "Version history" in the editor toolbar to see earlier
   snapshots of a chapter and restore any of them (your current text is saved as a version
   first, so restoring is never destructive).
+- **Reading mode** — click **Read** on a book's page (or **Read** in a chapter's toolbar to
+  start from that exact chapter) for a clean, read-only view with every chapter of the book
+  laid out one after another. Just scroll — it carries you straight from one chapter into the
+  next, with a small bar at the top showing which chapter you're currently in.
 - **Export to Word** — "Export .docx" in the editor exports just that chapter; "Export .docx"
   on a book's card (from the Books page) or "Export book (.docx)" on a book's own page
   combines every chapter into one Word document.

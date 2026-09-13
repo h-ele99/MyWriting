@@ -174,6 +174,9 @@ export default function ChapterPage() {
             {saveState === 'dirty' && 'Unsaved changes'}
           </div>
           <div className="pill-row">
+            <Link className="btn btn-ghost btn-sm" to={`/books/${bookId}/read/${chapterId}`}>
+              Read
+            </Link>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowVersions(true)}>
               Version history
             </button>

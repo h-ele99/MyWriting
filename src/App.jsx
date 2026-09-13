@@ -7,6 +7,7 @@ import Nav from './components/Nav.jsx'
 import BooksPage from './pages/BooksPage.jsx'
 import BookPage from './pages/BookPage.jsx'
 import ChapterPage from './pages/ChapterPage.jsx'
+import ReadPage from './pages/ReadPage.jsx'
 import TagsPage from './pages/TagsPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import { supabaseConfigured } from './supabaseClient.js'
@@ -39,6 +40,8 @@ function Shell() {
         <Route path="/" element={<BooksPage />} />
         <Route path="/books/:bookId" element={<BookPage />} />
         <Route path="/books/:bookId/chapters/:chapterId" element={<ChapterPage />} />
+        <Route path="/books/:bookId/read" element={<ReadPage />} />
+        <Route path="/books/:bookId/read/:chapterId" element={<ReadPage />} />
         <Route path="/tags" element={<TagsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

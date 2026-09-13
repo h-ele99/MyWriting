@@ -377,6 +377,68 @@ button, input, textarea, select { font-family: inherit; }
 
 .focus-mode .editor-body { min-height: 80vh; font-size: 19px; }
 
+.reading .app-shell > .topbar { display: none; }
+.reading .app-shell { padding-left: 0; padding-right: 0; max-width: none; }
+
+.read-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  background: rgba(253, 246, 245, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+
+.read-chapter-name {
+  font-family: var(--display);
+  font-size: 14px;
+  color: var(--pink-deep);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.read-scroll {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 20px 20px 140px;
+}
+
+.read-chapter {
+  padding: 52px 0;
+  border-bottom: 1px solid var(--border);
+}
+.read-chapter:last-child { border-bottom: none; }
+
+.read-chapter-title {
+  font-family: var(--display);
+  font-size: 27px;
+  text-align: center;
+  margin: 0 0 30px;
+}
+
+.read-chapter p {
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.85;
+  color: var(--ink);
+  margin: 0 0 22px;
+}
+
+.read-end {
+  text-align: center;
+  font-family: var(--display);
+  color: var(--ink-faint);
+  margin-top: 12px;
+}
+
 .center-screen {
   min-height: 100vh;
   display: flex;

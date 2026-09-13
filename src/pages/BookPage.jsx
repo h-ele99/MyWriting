@@ -92,11 +92,17 @@ export default function BookPage() {
         <div>
           <div className="page-title">{book.title}</div>
           {book.description && <p style={{ color: 'var(--ink-soft)', marginTop: 4 }}>{book.description}</p>}
-          <div style={{ marginTop: 10 }}>
+          <div className="field" style={{ marginTop: 12, marginBottom: 0 }}>
+            <label>Book tags</label>
             <TagEditor tags={bookTags} onChange={handleBookTagsChange} />
           </div>
         </div>
         <div className="pill-row">
+          {chapters.length > 0 && (
+            <Link className="btn btn-ghost" to={`/books/${bookId}/read`}>
+              Read
+            </Link>
+          )}
           <button className="btn btn-ghost" onClick={handleExportBook} disabled={exporting || chapters.length === 0}>
             {exporting ? 'Exporting…' : 'Export book (.docx)'}
           </button>
@@ -107,7 +113,11 @@ export default function BookPage() {
       </div>
 
       {allTags.length > 0 && (
-        <div className="pill-row" style={{ marginBottom: 18 }}>
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink-faint)', marginBottom: 8 }}>
+            Filter chapters by tag
+          </div>
+          <div className="pill-row">
           <span
             className={'tag-chip' + (!activeTag ? ' active' : '')}
             style={{ cursor: 'pointer' }}
@@ -125,6 +135,7 @@ export default function BookPage() {
               #{t.name}
             </span>
           ))}
+          </div>
         </div>
       )}
 
@@ -150,6 +161,16 @@ export default function BookPage() {
                 </div>
               )}
             </div>
+            <div className="pill-row">
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate(`/books/${bookId}/read/${chapter.id}`)
+              }}
+            >
+              Read
+            </button>
             <button
               className="btn btn-danger btn-sm"
               onClick={(e) => {
@@ -159,6 +180,7 @@ export default function BookPage() {
             >
               Delete
             </button>
+            </div>
           </Link>
         ))}
       </div>
