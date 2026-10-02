@@ -45,6 +45,10 @@ export async function updateBook(bookId, fields) {
 }
 
 export async function deleteBook(bookId) {
+  const attachments = await listAttachments({ bookId })
+  if (attachments.length) {
+    await supabase.storage.from(ATTACHMENTS_BUCKET).remove(attachments.map((a) => a.file_path))
+  }
   const { error } = await supabase.from('books').delete().eq('id', bookId)
   if (error) throw error
 }
@@ -104,6 +108,10 @@ export async function updateChapter(chapterId, fields) {
 }
 
 export async function deleteChapter(chapterId) {
+  const attachments = await listAttachments({ chapterId })
+  if (attachments.length) {
+    await supabase.storage.from(ATTACHMENTS_BUCKET).remove(attachments.map((a) => a.file_path))
+  }
   const { error } = await supabase.from('chapters').delete().eq('id', chapterId)
   if (error) throw error
 }
@@ -208,6 +216,59 @@ export async function listBooksByTag(tagName) {
   return data.filter((row) => row.books).map((row) => normalizeBook(row.books))
 }
 
+// ---------- attachments ----------
+
+const ATTACHMENTS_BUCKET = 'attachments'
+
+function sanitizeFileName(name) {
+  return name.replace(/[^\w.-]+/g, '_')
+}
+
+export async function listAttachments({ bookId, chapterId }) {
+  let query = supabase.from('attachments').select('*').order('created_at', { ascending: true })
+  query = bookId ? query.eq('book_id', bookId) : query.eq('chapter_id', chapterId)
+  const { data, error } = await query
+  if (error) throw error
+  return data
+}
+
+export async function uploadAttachment({ bookId, chapterId, file }) {
+  const { data: userData } = await supabase.auth.getUser()
+  const userId = userData.user.id
+  const path = `${userId}/${crypto.randomUUID()}-${sanitizeFileName(file.name)}`
+
+  const { error: uploadError } = await supabase.storage.from(ATTACHMENTS_BUCKET).upload(path, file)
+  if (uploadError) throw uploadError
+
+  const { data, error } = await supabase
+    .from('attachments')
+    .insert({
+      user_id: userId,
+      book_id: bookId || null,
+      chapter_id: chapterId || null,
+      file_name: file.name,
+      file_path: path,
+      mime_type: file.type || null,
+      size_bytes: file.size,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteAttachment(attachment) {
+  await supabase.storage.from(ATTACHMENTS_BUCKET).remove([attachment.file_path])
+  const { error } = await supabase.from('attachments').delete().eq('id', attachment.id)
+  if (error) throw error
+}
+
+export async function getAttachmentDownloadUrl(attachment) {
+  const { data, error } = await supabase.storage.from(ATTACHMENTS_BUCKET).createSignedUrl(attachment.file_path, 60)
+  if (error) throw error
+  return data.signedUrl
+}
+
 // ---------- version history ----------
 
 export async function listVersions(chapterId) {
@@ -236,21 +297,23 @@ export async function deleteVersion(versionId) {
 // ---------- full data export (used by backups) ----------
 
 export async function exportAllData() {
-  const [{ data: books }, { data: chapters }, { data: tags }, { data: chapterTags }, { data: bookTags }] =
+  const [{ data: books }, { data: chapters }, { data: tags }, { data: chapterTags }, { data: bookTags }, { data: attachments }] =
     await Promise.all([
       supabase.from('books').select('*'),
       supabase.from('chapters').select('*'),
       supabase.from('tags').select('*'),
       supabase.from('chapter_tags').select('*'),
       supabase.from('book_tags').select('*'),
+      supabase.from('attachments').select('*'),
     ])
   return {
     exportedAt: new Date().toISOString(),
-    version: 2,
+    version: 3,
     books: books || [],
     chapters: chapters || [],
     tags: tags || [],
     chapterTags: chapterTags || [],
     bookTags: bookTags || [],
+    attachments: attachments || [],
   }
 }

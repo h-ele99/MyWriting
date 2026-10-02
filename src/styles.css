@@ -341,9 +341,51 @@ button, input, textarea, select { font-family: inherit; }
   font-size: 18px;
   line-height: 1.75;
   color: var(--ink);
-  resize: vertical;
 }
 .editor-body:focus { outline: none; }
+
+.editor-body p { margin: 0 0 1em; }
+.editor-body h2 { font-family: var(--serif); font-size: 26px; font-weight: 600; line-height: 1.3; margin: 0.9em 0 0.4em; }
+.editor-body ul, .editor-body ol { margin: 0 0 1em; padding-left: 1.4em; }
+.editor-body li { margin: 0 0 0.4em; }
+.editor-body strong { font-weight: 700; }
+.editor-body em { font-style: italic; }
+.editor-body u { text-decoration: underline; }
+
+.editor-body p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--ink-faint);
+  pointer-events: none;
+  height: 0;
+}
+
+.editor-format-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 20px 4px;
+  flex-wrap: wrap;
+}
+
+.format-btn {
+  border: none;
+  background: transparent;
+  color: var(--ink-faint);
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 13px;
+  cursor: pointer;
+  line-height: 1;
+}
+.format-btn:hover { background: var(--surface-soft); color: var(--ink-soft); }
+.format-btn.active { background: var(--pink); color: white; }
+
+.format-sep { width: 1px; height: 16px; background: var(--border); margin: 0 4px; }
+
+.focus-mode .editor-format-toolbar { opacity: 0.35; transition: opacity 0.15s ease; }
+.focus-mode .editor-format-toolbar:hover,
+.focus-mode .editor-format-toolbar:focus-within { opacity: 1; }
 
 .editor-toolbar {
   display: flex;
@@ -373,6 +415,7 @@ button, input, textarea, select { font-family: inherit; }
 
 .focus-mode .app-shell > .topbar,
 .focus-mode .editor-tags-row,
+.focus-mode .editor-attachments-row,
 .focus-mode .breadcrumb { display: none; }
 
 .focus-mode .editor-body { min-height: 80vh; font-size: 19px; }
@@ -424,13 +467,31 @@ button, input, textarea, select { font-family: inherit; }
   margin: 0 0 30px;
 }
 
-.read-chapter p {
+.read-chapter-body p {
   font-family: var(--serif);
-  font-size: 19px;
+  font-size: calc(19px * var(--read-font-scale, 1));
   line-height: 1.85;
   color: var(--ink);
   margin: 0 0 22px;
 }
+.read-chapter-body h2 {
+  font-family: var(--display);
+  font-size: calc(24px * var(--read-font-scale, 1));
+  text-align: center;
+  color: var(--ink);
+  margin: 40px 0 20px;
+}
+.read-chapter-body ul, .read-chapter-body ol {
+  font-family: var(--serif);
+  font-size: calc(19px * var(--read-font-scale, 1));
+  line-height: 1.85;
+  margin: 0 0 22px;
+  padding-left: 1.4em;
+}
+.read-chapter-body li { margin: 0 0 8px; }
+.read-chapter-body strong { font-weight: 700; }
+.read-chapter-body em { font-style: italic; }
+.read-chapter-body u { text-decoration: underline; }
 
 .read-end {
   text-align: center;

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Modal from '../components/Modal.jsx'
 import TagEditor from '../components/TagEditor.jsx'
+import AttachmentsList from '../components/AttachmentsList.jsx'
 import { createChapter, deleteChapter, getBook, listChapters, setBookTags } from '../lib/db.js'
 import { exportBookToDocx } from '../lib/docxExport.js'
 import { scheduleBackupAfterEdit } from '../lib/backup.js'
@@ -95,6 +96,9 @@ export default function BookPage() {
           <div className="field" style={{ marginTop: 12, marginBottom: 0 }}>
             <label>Book tags</label>
             <TagEditor tags={bookTags} onChange={handleBookTagsChange} />
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <AttachmentsList bookId={bookId} />
           </div>
         </div>
         <div className="pill-row">

@@ -58,6 +58,25 @@ create table if not exists public.book_tags (
 
 create index if not exists book_tags_tag_id_idx on public.book_tags (tag_id);
 
+-- ---------- attachments ----------
+create table if not exists public.attachments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade default auth.uid(),
+  book_id uuid references public.books (id) on delete cascade,
+  chapter_id uuid references public.chapters (id) on delete cascade,
+  file_name text not null,
+  file_path text not null,
+  mime_type text,
+  size_bytes bigint,
+  created_at timestamptz not null default now(),
+  constraint attachments_one_parent check (
+    (book_id is not null and chapter_id is null) or (book_id is null and chapter_id is not null)
+  )
+);
+
+create index if not exists attachments_book_id_idx on public.attachments (book_id);
+create index if not exists attachments_chapter_id_idx on public.attachments (chapter_id);
+
 -- ---------- chapter_versions (version history) ----------
 create table if not exists public.chapter_versions (
   id uuid primary key default gen_random_uuid(),
@@ -102,6 +121,7 @@ alter table public.chapters enable row level security;
 alter table public.tags enable row level security;
 alter table public.chapter_tags enable row level security;
 alter table public.book_tags enable row level security;
+alter table public.attachments enable row level security;
 alter table public.chapter_versions enable row level security;
 alter table public.backup_log enable row level security;
 
@@ -125,6 +145,10 @@ drop policy if exists "own rows only" on public.book_tags;
 create policy "own rows only" on public.book_tags
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+drop policy if exists "own rows only" on public.attachments;
+create policy "own rows only" on public.attachments
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 drop policy if exists "own rows only" on public.chapter_versions;
 create policy "own rows only" on public.chapter_versions
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
@@ -132,3 +156,13 @@ create policy "own rows only" on public.chapter_versions
 drop policy if exists "own rows only" on public.backup_log;
 create policy "own rows only" on public.backup_log
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ---------- attachments storage bucket ----------
+insert into storage.buckets (id, name, public)
+values ('attachments', 'attachments', false)
+on conflict (id) do nothing;
+
+drop policy if exists "own files only" on storage.objects;
+create policy "own files only" on storage.objects
+  for all using (bucket_id = 'attachments' and auth.uid()::text = (storage.foldername(name))[1])
+  with check (bucket_id = 'attachments' and auth.uid()::text = (storage.foldername(name))[1]);

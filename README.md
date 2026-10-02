@@ -26,11 +26,17 @@ You don't need to write any code — just copy/paste a few values.
    somewhere safe — a password manager is fine), pick the region closest to you, and click
    **Create new project**. Wait ~1-2 minutes while it provisions.
 3. Once it's ready, in the left sidebar click the **SQL Editor** (icon looks like `>_`).
-4. Click **New query**. Open the file `supabase/schema.sql` from this project, copy its
+4. Click **New query**. Open the file `supabase/schema.sql` from this project (make sure
+   you're looking at the latest version on GitHub, not a cached browser tab), copy its
    entire contents, and paste it into the SQL editor. Click **Run** (bottom right).
    You should see "Success. No rows returned." This creates all the tables (books,
-   chapters, tags, version history, backup log) and locks them down so only you can read
-   your own data.
+   chapters, tags, attachments, version history, backup log), a private Storage bucket for
+   attachments, and locks everything down so only you can read your own data. If Bloom's
+   code is ever updated with new tables, re-pasting and re-running this same file is always
+   safe — it only adds what's missing, nothing already there is touched. You can double-check
+   what tables exist at any time by running
+   `select table_name from information_schema.tables where table_schema = 'public' order by table_name;`
+   in the SQL editor.
 5. In the left sidebar, click the gear icon **Project Settings** → **API**.
    - Copy the **Project URL** (looks like `https://xxxxxxxx.supabase.co`).
    - Copy the **anon public** key (a long string under "Project API keys").
@@ -118,9 +124,12 @@ The easiest option is **Vercel** or **Netlify** (both have generous free tiers):
 
 - **Books** — the home page. Create a book, click into it to see its chapters.
 - **Chapters** — inside a book, create chapters, click one to open the editor.
-- **Editor** — a clean page with just the title and text. It autosaves ~1.5 seconds after
-  you stop typing (or press Cmd/Ctrl+S, or click "Save now"). Click **Focus mode** to hide
-  everything except the page you're writing.
+- **Editor** — a clean page with just the title and text, with a slim formatting bar for
+  **bold**, *italic*, underline, bullet lists, numbered lists, and a heading style. It
+  autosaves ~1.5 seconds after you stop typing (or press Cmd/Ctrl+S, or click "Save now").
+  "Save & close" saves and takes you back to the book; "Save & new" saves and opens a fresh
+  chapter in the same book. Click **Focus mode** to hide everything except the page you're
+  writing (the formatting bar dims rather than disappearing, so it's still one hover away).
 - **Tags** — add hashtags to a chapter right under its title, or to a book itself (in the
   New/Edit book form, or right under the title on a book's page) — type a word and press
   Enter. Use the **Tags** page in the top nav to search all your tags and see every book and
@@ -133,7 +142,15 @@ The easiest option is **Vercel** or **Netlify** (both have generous free tiers):
 - **Reading mode** — click **Read** on a book's page (or **Read** in a chapter's toolbar to
   start from that exact chapter) for a clean, read-only view with every chapter of the book
   laid out one after another. Just scroll — it carries you straight from one chapter into the
-  next, with a small bar at the top showing which chapter you're currently in.
+  next, with a small bar at the top showing which chapter you're currently in. Use the **A−**
+  and **A+** buttons there to shrink or enlarge the text — it's remembered on that browser
+  for next time.
+- **Attachments** — on a book's page or a chapter's page, "+ Add attachment" lets you upload
+  any file (images, PDFs, reference notes, anything) and keep it alongside your writing;
+  download or delete it from the same list. Files are private to your account. Note:
+  Supabase's free tier caps individual uploads at 50MB, and attached files aren't included in
+  the Google Drive JSON backup below (only their names are, for reference) — only your books,
+  chapters, and tags are backed up that way.
 - **Export to Word** — "Export .docx" in the editor exports just that chapter; "Export .docx"
   on a book's card (from the Books page) or "Export book (.docx)" on a book's own page
   combines every chapter into one Word document.

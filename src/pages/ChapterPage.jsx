@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
+  createChapter,
   getBook,
   getChapter,
   listVersions,
@@ -10,15 +11,19 @@ import {
 } from '../lib/db.js'
 import { exportChapterToDocx } from '../lib/docxExport.js'
 import { scheduleBackupAfterEdit } from '../lib/backup.js'
+import { normalizeBodyToHtml, isEmptyBody } from '../lib/richText.js'
 import { useToast } from '../components/Toast.jsx'
 import VersionHistory from '../components/VersionHistory.jsx'
 import TagEditor from '../components/TagEditor.jsx'
+import RichTextEditor from '../components/RichTextEditor.jsx'
+import AttachmentsList from '../components/AttachmentsList.jsx'
 
 const AUTOSAVE_DELAY = 1500
 const SNAPSHOT_MIN_INTERVAL = 5 * 60 * 1000 // 5 minutes
 
 export default function ChapterPage() {
   const { bookId, chapterId } = useParams()
+  const navigate = useNavigate()
   const showToast = useToast()
 
   const [book, setBook] = useState(null)
@@ -34,18 +39,20 @@ export default function ChapterPage() {
   const lastSaved = useRef({ title: '', body: '' })
   const lastSnapshotAt = useRef(0)
   const saveTimer = useRef(null)
+  const editorRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
     async function load() {
       const [c, b] = await Promise.all([getChapter(chapterId), getBook(bookId)])
       if (cancelled) return
+      const normalizedBody = normalizeBodyToHtml(c.body)
       setChapter(c)
       setBook(b)
       setTitle(c.title)
-      setBody(c.body)
+      setBody(normalizedBody)
       setTags(c.tags.map((t) => t.name))
-      lastSaved.current = { title: c.title, body: c.body }
+      lastSaved.current = { title: c.title, body: normalizedBody }
       const versions = await listVersions(chapterId)
       lastSnapshotAt.current = versions[0] ? new Date(versions[0].created_at).getTime() : 0
     }
@@ -67,7 +74,7 @@ export default function ChapterPage() {
     try {
       const now = Date.now()
       const changed = lastSaved.current.title !== title || lastSaved.current.body !== body
-      if (changed && now - lastSnapshotAt.current > SNAPSHOT_MIN_INTERVAL && lastSaved.current.body) {
+      if (changed && now - lastSnapshotAt.current > SNAPSHOT_MIN_INTERVAL && !isEmptyBody(lastSaved.current.body)) {
         await saveVersionSnapshot(chapterId, lastSaved.current)
         lastSnapshotAt.current = now
       }
@@ -75,9 +82,11 @@ export default function ChapterPage() {
       lastSaved.current = { title, body }
       setSaveState('saved')
       scheduleBackupAfterEdit()
+      return true
     } catch (err) {
       showToast('Could not save: ' + err.message)
       setSaveState('dirty')
+      return false
     }
   }, [chapterId, title, body, showToast])
 
@@ -112,6 +121,17 @@ export default function ChapterPage() {
     }
   }
 
+  async function handleSaveAndClose() {
+    if (await doSave()) navigate(`/books/${bookId}`)
+  }
+
+  async function handleSaveAndNew() {
+    if (!(await doSave())) return
+    const chapter = await createChapter({ bookId, title: 'Untitled chapter' })
+    scheduleBackupAfterEdit()
+    navigate(`/books/${bookId}/chapters/${chapter.id}`)
+  }
+
   async function handleExport() {
     setExporting(true)
     try {
@@ -128,12 +148,14 @@ export default function ChapterPage() {
     if (!window.confirm(`Restore the version from ${new Date(version.created_at).toLocaleString()}? Your current text will be saved as a version first.`)) {
       return
     }
+    const normalizedVersionBody = normalizeBodyToHtml(version.body)
     await saveVersionSnapshot(chapterId, { title, body })
     lastSnapshotAt.current = Date.now()
-    lastSaved.current = { title: version.title, body: version.body }
+    lastSaved.current = { title: version.title, body: normalizedVersionBody }
     setTitle(version.title)
-    setBody(version.body)
-    await updateChapter(chapterId, { title: version.title, body: version.body })
+    setBody(normalizedVersionBody)
+    editorRef.current?.setContent(normalizedVersionBody)
+    await updateChapter(chapterId, { title: version.title, body: normalizedVersionBody })
     setSaveState('saved')
     setShowVersions(false)
     showToast('Version restored')
@@ -159,13 +181,10 @@ export default function ChapterPage() {
         <div className="editor-tags-row" style={{ padding: '0 18px 10px' }}>
           <TagEditor tags={tags} onChange={handleTagsChange} />
         </div>
-        <textarea
-          className="editor-body"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="Once upon a time…"
-          spellCheck
-        />
+        <div className="editor-attachments-row" style={{ padding: '0 18px 14px' }}>
+          <AttachmentsList chapterId={chapterId} />
+        </div>
+        <RichTextEditor key={chapterId} ref={editorRef} initialContent={body} onChange={setBody} />
         <div className="editor-toolbar">
           <div className={'save-status ' + saveState}>
             <span className="dot" />
@@ -185,6 +204,12 @@ export default function ChapterPage() {
             </button>
             <button className="btn btn-ghost btn-sm" onClick={() => setFocusMode((f) => !f)}>
               {focusMode ? 'Exit focus mode' : 'Focus mode'}
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={handleSaveAndClose}>
+              Save &amp; close
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={handleSaveAndNew}>
+              Save &amp; new
             </button>
             <button className="btn btn-primary btn-sm" onClick={doSave}>
               Save now

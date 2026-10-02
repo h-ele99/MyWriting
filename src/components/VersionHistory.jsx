@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Modal from './Modal.jsx'
 import { listVersions } from '../lib/db.js'
+import { bodyToPlainText } from '../lib/richText.js'
 
 export default function VersionHistory({ chapterId, onClose, onRestore }) {
   const [versions, setVersions] = useState(null)
@@ -23,7 +24,7 @@ export default function VersionHistory({ chapterId, onClose, onRestore }) {
             <div key={v.id} className="version-item">
               <div>
                 <div className="meta">{new Date(v.created_at).toLocaleString()}</div>
-                <div className="snippet">{v.title} — {v.body.slice(0, 60) || '(empty)'}</div>
+                <div className="snippet">{v.title} — {bodyToPlainText(v.body).slice(0, 60) || '(empty)'}</div>
               </div>
               <button className="btn btn-ghost btn-sm" onClick={() => onRestore(v)}>
                 Restore

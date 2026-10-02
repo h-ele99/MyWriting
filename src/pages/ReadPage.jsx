@@ -1,12 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getBook, listChapters } from '../lib/db.js'
+import { normalizeBodyToHtml } from '../lib/richText.js'
+
+const FONT_SCALE_KEY = 'bloom_read_font_scale'
+const FONT_SCALE_MIN = 0.8
+const FONT_SCALE_MAX = 1.5
+const FONT_SCALE_STEP = 0.1
 
 export default function ReadPage() {
   const { bookId, chapterId } = useParams()
   const [book, setBook] = useState(null)
   const [chapters, setChapters] = useState(null)
   const [activeChapterId, setActiveChapterId] = useState(chapterId || null)
+  const [fontScale, setFontScale] = useState(() => {
+    const saved = parseFloat(localStorage.getItem(FONT_SCALE_KEY))
+    return Number.isFinite(saved) ? saved : 1
+  })
   const chapterRefs = useRef({})
   const hasScrolledToStart = useRef(false)
 
@@ -14,6 +24,14 @@ export default function ReadPage() {
     document.body.classList.add('reading')
     return () => document.body.classList.remove('reading')
   }, [])
+
+  useEffect(() => {
+    localStorage.setItem(FONT_SCALE_KEY, String(fontScale))
+  }, [fontScale])
+
+  function adjustFont(delta) {
+    setFontScale((s) => Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, +(s + delta).toFixed(2))))
+  }
 
   useEffect(() => {
     Promise.all([getBook(bookId), listChapters(bookId)]).then(([b, c]) => {
@@ -69,9 +87,17 @@ export default function ReadPage() {
         <Link to={`/books/${bookId}`} className="btn btn-ghost btn-sm">
           ← {book.title}
         </Link>
-        <div className="read-chapter-name">{activeChapter.title}</div>
+        <div className="pill-row" style={{ alignItems: 'center' }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => adjustFont(-FONT_SCALE_STEP)} aria-label="Decrease font size">
+            A−
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => adjustFont(FONT_SCALE_STEP)} aria-label="Increase font size">
+            A+
+          </button>
+          <div className="read-chapter-name">{activeChapter.title}</div>
+        </div>
       </div>
-      <div className="read-scroll">
+      <div className="read-scroll" style={{ '--read-font-scale': fontScale }}>
         {chapters.map((chapter, i) => (
           <section
             key={chapter.id}
@@ -82,9 +108,7 @@ export default function ReadPage() {
             className="read-chapter"
           >
             <h2 className="read-chapter-title">{chapter.title}</h2>
-            {chapter.body.split('\n').map((line, idx) => (
-              <p key={idx}>{line || ' '}</p>
-            ))}
+            <div className="read-chapter-body" dangerouslySetInnerHTML={{ __html: normalizeBodyToHtml(chapter.body) }} />
             {i === chapters.length - 1 && <div className="read-end">— End of {book.title} —</div>}
           </section>
         ))}
