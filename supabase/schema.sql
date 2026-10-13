@@ -166,3 +166,13 @@ drop policy if exists "own files only" on storage.objects;
 create policy "own files only" on storage.objects
   for all using (bucket_id = 'attachments' and auth.uid()::text = (storage.foldername(name))[1])
   with check (bucket_id = 'attachments' and auth.uid()::text = (storage.foldername(name))[1]);
+
+-- ---------- chapter-images storage bucket (public, for images pasted into the editor) ----------
+insert into storage.buckets (id, name, public)
+values ('chapter-images', 'chapter-images', true)
+on conflict (id) do nothing;
+
+drop policy if exists "own chapter images only" on storage.objects;
+create policy "own chapter images only" on storage.objects
+  for all using (bucket_id = 'chapter-images' and auth.uid()::text = (storage.foldername(name))[1])
+  with check (bucket_id = 'chapter-images' and auth.uid()::text = (storage.foldername(name))[1]);

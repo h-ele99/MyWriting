@@ -5,6 +5,7 @@ import {
   HeadingLevel,
   PageBreak,
   TextRun,
+  ImageRun,
   LevelFormat,
   AlignmentType,
 } from 'docx'
@@ -12,6 +13,7 @@ import { saveAs } from 'file-saver'
 import { normalizeBodyToHtml } from './richText.js'
 
 const NUMBERED_LIST_REFERENCE = 'chapter-numbered-list'
+const MAX_IMAGE_WIDTH = 500
 
 const numberingConfig = {
   config: [
@@ -54,8 +56,47 @@ function collectRuns(node, marks = { bold: false, italic: false, underline: fals
   return runs
 }
 
-function blockToParagraphs(el) {
+function mimeToDocxImageType(mime) {
+  if (mime === 'image/jpeg' || mime === 'image/jpg') return 'jpg'
+  if (mime === 'image/gif') return 'gif'
+  if (mime === 'image/bmp') return 'bmp'
+  return 'png'
+}
+
+async function imageElementToParagraph(el) {
+  const src = el.getAttribute('src')
+  if (!src) return null
+  try {
+    const res = await fetch(src)
+    if (!res.ok) return null
+    const blob = await res.blob()
+    const buffer = await blob.arrayBuffer()
+    const bitmap = await createImageBitmap(blob)
+    const scale = bitmap.width > MAX_IMAGE_WIDTH ? MAX_IMAGE_WIDTH / bitmap.width : 1
+    const width = Math.round(bitmap.width * scale)
+    const height = Math.round(bitmap.height * scale)
+    bitmap.close()
+    return new Paragraph({
+      children: [
+        new ImageRun({
+          data: buffer,
+          type: mimeToDocxImageType(blob.type),
+          transformation: { width, height },
+        }),
+      ],
+      spacing: { after: 200 },
+    })
+  } catch {
+    return null
+  }
+}
+
+async function blockToParagraphs(el) {
   const tag = el.tagName.toLowerCase()
+  if (tag === 'img') {
+    const paragraph = await imageElementToParagraph(el)
+    return paragraph ? [paragraph] : []
+  }
   if (tag === 'h1' || tag === 'h2') {
     return [new Paragraph({ heading: HeadingLevel.HEADING_2, children: collectRuns(el) })]
   }
@@ -71,11 +112,13 @@ function blockToParagraphs(el) {
   return [new Paragraph({ children: runs.length ? runs : [new TextRun('')], spacing: { after: 200 } })]
 }
 
-function bodyToParagraphs(body) {
+async function bodyToParagraphs(body) {
   const container = document.createElement('div')
   container.innerHTML = normalizeBodyToHtml(body)
   const paragraphs = []
-  Array.from(container.children).forEach((el) => paragraphs.push(...blockToParagraphs(el)))
+  for (const el of Array.from(container.children)) {
+    paragraphs.push(...(await blockToParagraphs(el)))
+  }
   return paragraphs.length ? paragraphs : [new Paragraph({ children: [new TextRun('')] })]
 }
 
@@ -90,7 +133,7 @@ export async function exportChapterToDocx(chapter) {
       {
         children: [
           new Paragraph({ text: chapter.title, heading: HeadingLevel.TITLE }),
-          ...bodyToParagraphs(chapter.body),
+          ...(await bodyToParagraphs(chapter.body)),
         ],
       },
     ],
@@ -105,13 +148,13 @@ export async function exportBookToDocx(book, chapters) {
     children.push(new Paragraph({ children: [new TextRun({ text: book.description, italics: true })] }))
   }
 
-  chapters.forEach((chapter, index) => {
+  for (const [index, chapter] of chapters.entries()) {
     if (index > 0) {
       children.push(new Paragraph({ children: [new PageBreak()] }))
     }
     children.push(new Paragraph({ text: chapter.title, heading: HeadingLevel.HEADING_1 }))
-    children.push(...bodyToParagraphs(chapter.body))
-  })
+    children.push(...(await bodyToParagraphs(chapter.body)))
+  }
 
   const doc = new Document({ numbering: numberingConfig, sections: [{ children }] })
   const blob = await Packer.toBlob(doc)

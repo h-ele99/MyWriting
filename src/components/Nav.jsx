@@ -1,8 +1,17 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext.jsx'
+import { applyTheme, getStoredTheme } from '../lib/theme.js'
 
 export default function Nav() {
   const { user, signOut } = useAuth()
+  const [theme, setTheme] = useState(getStoredTheme)
+
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    applyTheme(next)
+    setTheme(next)
+  }
 
   return (
     <div className="topbar">
@@ -20,6 +29,9 @@ export default function Nav() {
         <NavLink to="/settings" className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
           Settings
         </NavLink>
+        <button className="nav-link" style={{ border: 'none', cursor: 'pointer' }} onClick={toggleTheme}>
+          {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+        </button>
         {user && (
           <button className="nav-link" style={{ border: 'none', cursor: 'pointer' }} onClick={() => signOut()}>
             Sign out

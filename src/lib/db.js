@@ -269,6 +269,22 @@ export async function getAttachmentDownloadUrl(attachment) {
   return data.signedUrl
 }
 
+// ---------- images pasted into the editor ----------
+
+const CHAPTER_IMAGES_BUCKET = 'chapter-images'
+
+export async function uploadChapterImage(file) {
+  const { data: userData } = await supabase.auth.getUser()
+  const userId = userData.user.id
+  const extension = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '')
+  const path = `${userId}/${crypto.randomUUID()}.${extension}`
+
+  const { error } = await supabase.storage.from(CHAPTER_IMAGES_BUCKET).upload(path, file)
+  if (error) throw error
+
+  return supabase.storage.from(CHAPTER_IMAGES_BUCKET).getPublicUrl(path).data.publicUrl
+}
+
 // ---------- version history ----------
 
 export async function listVersions(chapterId) {

@@ -31,7 +31,10 @@ You don't need to write any code — just copy/paste a few values.
    entire contents, and paste it into the SQL editor. Click **Run** (bottom right).
    You should see "Success. No rows returned." This creates all the tables (books,
    chapters, tags, attachments, version history, backup log), a private Storage bucket for
-   attachments, and locks everything down so only you can read your own data. If Bloom's
+   attachments and a public one for images pasted into the editor, and locks everything
+   down so only you can read your own data (and, for pasted images, only you can add or
+   remove them — public only means anyone with a specific image's exact link could view
+   that one image, same as an image link from any other site). If Bloom's
    code is ever updated with new tables, re-pasting and re-running this same file is always
    safe — it only adds what's missing, nothing already there is touched. You can double-check
    what tables exist at any time by running
@@ -125,11 +128,16 @@ The easiest option is **Vercel** or **Netlify** (both have generous free tiers):
 - **Books** — the home page. Create a book, click into it to see its chapters.
 - **Chapters** — inside a book, create chapters, click one to open the editor.
 - **Editor** — a clean page with just the title and text, with a slim formatting bar for
-  **bold**, *italic*, underline, bullet lists, numbered lists, and a heading style. It
-  autosaves ~1.5 seconds after you stop typing (or press Cmd/Ctrl+S, or click "Save now").
-  "Save & close" saves and takes you back to the book; "Save & new" saves and opens a fresh
-  chapter in the same book. Click **Focus mode** to hide everything except the page you're
-  writing (the formatting bar dims rather than disappearing, so it's still one hover away).
+  **bold**, *italic*, underline, bullet lists, numbered lists, and a heading style, plus
+  copy/paste icons and **A−**/**A+** buttons to shrink or enlarge the writing text (remembered
+  on that browser). Paste an image (e.g. a screenshot) straight into the text and it's
+  uploaded and inserted inline. It autosaves ~1.5 seconds after you stop typing (or press
+  Cmd/Ctrl+S, or click "Save now"). "Save & close" saves and takes you back to the book;
+  "Save & new" saves and opens a fresh chapter in the same book. Click **Focus mode** to hide
+  everything except the page you're writing (the formatting bar dims rather than
+  disappearing, so it's still one hover away).
+- **Dark mode** — the "Dark mode" / "Light mode" button in the top nav switches the whole
+  app's color scheme; remembered on that browser for next time.
 - **Tags** — add hashtags to a chapter right under its title, or to a book itself (in the
   New/Edit book form, or right under the title on a book's page) — type a word and press
   Enter. Use the **Tags** page in the top nav to search all your tags and see every book and
